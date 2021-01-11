@@ -139,9 +139,8 @@ typedef union axes {
 
 /* Function definitions */
 
-// read and send data
+// read data from registers
 void read_data(AxisData *data, DataMode mode);
-void send_data(AxisData *data, DataMode mode);
 
 // initialize the IMU
 void imu_init();
