@@ -19,6 +19,12 @@ There is an `AxisData` union that is used to store data retrieved from the IMU.
 * `eulerAngles[3]`
 * `quaternions[4]`
 
+However, this is the raw data from the register. To obtain useful information, you will need to manipulate the values.
+* For the `accelAxes` and `gravAxes`, leave the data as it is obtained
+* To get the radians / second of the gyroscope, divide the `gyroAxes` data by 16
+* To get the absolute angular orientation from `eulerAngles`, divide the data by 16
+* The `quaternions` data should be divided by 16384
+
 ## Usage
 To use the library, simply add the header file as an include. Then, in your `setup()` function, begin the `Wire`to communicate with I2C. Then, initialize the IMU with `imu_init()`.
 ```ino
@@ -44,4 +50,11 @@ void loop()
   
   free(data);
 }
+```
+To make this data useful, apply the manipulation suggested earlier. For example, for the quaternion data
+```ino
+q.x = (float)(data->quaternions[0]) / 16384.;
+q.y = (float)(data->quaternions[1]) / 16384.;
+q.z = (float)(data->quaternions[2]) / 16384.;
+q.w = (float)(data->quaternions[3]) / 16384.;
 ```
