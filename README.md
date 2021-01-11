@@ -41,5 +41,7 @@ void loop()
   }
 
   read_data(data, ACCEL);
+  
+  free(data);
 }
 ```
