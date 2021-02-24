@@ -1,16 +1,14 @@
 # Arduino-BNO055
 
-A library for the BNO055 IMU for Arduino. This is based on [Kris' BNO055 Repository](https://github.com/kriswiner/BNO055), but heavily simplified.
-
-This was written for [HyTech Racing](https://www.github.com/hytech-racing/).
+A library for the BNO055 IMU for Arduino. You can find the datasheet [here](https://cdn-shop.adafruit.com/datasheets/BST_BNO055_DS000_12.pdf).
 
 ## Features
 There are currently 5 supported data modes, represented with the enum `DataMode`.
-* GYRO    - angular velocity
-* GRAVITY - gravitational acceleration
-* ACCEL   - accelration including movement
-* EUL     - absolute angular orientation
-* QUAT    - absolute orientation in quaternion form
+* GYRO    - angular velocity in degrees / sec
+* GRAVITY - gravitational acceleration in meters / sec^2
+* ACCEL   - linear acceleration in meters / sec^2
+* EUL     - absolute angular orientation in degrees [0, 360)
+* QUAT    - absolute orientation in quaternion form [-180, 180)
 
 There is an `AxisData` union that is used to store data retrieved from the IMU.
 * `accelAxes[3]`
@@ -19,42 +17,42 @@ There is an `AxisData` union that is used to store data retrieved from the IMU.
 * `eulerAngles[3]`
 * `quaternions[4]`
 
-However, this is the raw data from the register. To obtain useful information, you will need to manipulate the values.
-* For the `accelAxes` and `gravAxes`, leave the data as it is obtained
-* To get the radians / second of the gyroscope, divide the `gyroAxes` data by 16
-* To get the absolute angular orientation from `eulerAngles`, divide the data by 16
-* The `quaternions` data should be divided by 16384
+This is the raw data from the IMU. For data that has been calculated and is useful right from the box,
+you can use the `Data` struct. There are 5 float arrays stored in the `Data` struct.
+* `accelAxes[3]`
+* `gyroAxes[3]`
+* `gravAxes[3]`
+* `eulerAngles[3]`
+* `orientation[3]`
+The orientation values are calculated using the quaternions.
 
 ## Usage
-To use the library, simply add the header file as an include. Then, in your `setup()` function, begin the `Wire`to communicate with I2C. Then, initialize the IMU with `imu_init()`.
+To use the library, simply add the header file as an include. Then, in your `setup()` function, begin the `Wire` to communicate with I2C. Then, initialize the IMU with `imu_init()`.
 ```ino
 #include <BNO055_IMU.h>
+
+Data *data;
 
 void setup()
 {
   Wire.begin();
+
   imu_init(); // initializes the IMU
+
+  if (!(data = (Data *)malloc(sizeof(Data)))) {
+    return;
+  }
 }
 ```
 
-To read data from the IMU, simply call `read_data(*data, mode)` with an `AxisData` destination called `data`. An implementation of this would be the following:
+To read data from the IMU, simply call `update_data(*data)` with a `Data` destination called `data`. An implementation of this would be the following:
 ```ino
 void loop()
 {
-  AxisData *data;
-  if (!(data = (AxisData *)malloc(sizeof(AxisData)))) {
-      return;
-  }
+  if (!data) return;
 
-  read_data(data, ACCEL);
-  
-  free(data);
+  update_data(data);
+
+  // you can then use the data
 }
-```
-To make this data useful, apply the manipulation suggested earlier. For example, for the quaternion data
-```ino
-q.x = (float)(data->quaternions[0]) / 16384.;
-q.y = (float)(data->quaternions[1]) / 16384.;
-q.z = (float)(data->quaternions[2]) / 16384.;
-q.w = (float)(data->quaternions[3]) / 16384.;
 ```

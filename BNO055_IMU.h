@@ -1,5 +1,6 @@
 #include <Wire.h>
 #include <stdlib.h>
+#include <math.h>
 
 #ifndef BNO055_IMU_H
 #define BNO055_IMU_H
@@ -137,10 +138,29 @@ typedef union axes {
     int16_t quaternions[4]; // qauaternion
 } AxisData;
 
+// a struct of useful data
+typedef struct data {
+    float accelAxes[3];
+    float gyroAxes[3];
+    float gravAxes[3];
+    float eulerAngles[3];
+    float orientation[3];
+} Data;
+
+// quaternion
+typedef struct quaternion {
+  float x;
+  float y;
+  float z;
+  float w;
+} Quaternion;
+
 /* Function definitions */
 
 // read data from registers
 void read_data(AxisData *data, DataMode mode);
+
+void update_data(Data *my_data);
 
 // initialize the IMU
 void imu_init();

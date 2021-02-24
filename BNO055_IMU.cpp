@@ -15,7 +15,7 @@ void read_data(AxisData *data, DataMode mode)
         case ACCEL:
             {
                 uint8_t raw_data[6];
-                i2c_read(I2C_ADDRESS, ACC_DATA_X_LSB, 6, raw_data);
+                i2c_read(I2C_ADDRESS, LIA_DATA_X_LSB, 6, raw_data);
                 data->accelAxes[0] = ((int16_t)raw_data[1] << 8) | raw_data[0];
                 data->accelAxes[1] = ((int16_t)raw_data[3] << 8) | raw_data[2];
                 data->accelAxes[2] = ((int16_t)raw_data[5] << 8) | raw_data[4];
@@ -52,7 +52,55 @@ void read_data(AxisData *data, DataMode mode)
     }
 }
 
-// TODO: if needed, customize the init data bytes
+void update_data(Data *my_data)
+{
+    AxisData *data;
+    if (!(data = (AxisData *)malloc(sizeof(AxisData)))) {
+        return;
+    }
+
+    read_data(data, ACCEL);
+    for (size_t i = 0; i < 3; i++) {
+        my_data->accelAxes[i] = (float) data->accelAxes[i] / 100.;
+    }
+
+    read_data(data, GYRO);
+    for (size_t i = 0; i < 3; i++) {
+        my_data->gyroAxes[i] = (float) data->gyroAxes[i] / 16.;
+    }
+
+    read_data(data, GRAVITY);
+    for (size_t i = 0; i < 3; i++) {
+        my_data->gravAxes[i] = (float) data->gravAxes[i] / 100.;
+    }
+
+    read_data(data, EUL);
+    for (size_t i = 0; i < 3; i++) {
+        my_data->eulerAngles[i] = (float) data->eulerAngles[i] / 16.;
+    }
+
+    Quaternion q;
+    read_data(data, QUAT);
+    q.x = (float) data->quaternions[0] / 16384.;
+    q.y = (float) data->quaternions[1] / 16384.;
+    q.z = (float) data->quaternions[2] / 16384.;
+    q.w = (float) data->quaternions[3] / 16384.;
+
+    float yaw = atan2(2.0f*(q.y*q.z + q.w*q.x), q.x*q.x + q.y*q.y - q.z*q.z - q.w*q.w);
+    float pitch = -asin(2.0f*(q.y*q.w - q.x*q.z));
+    float roll = atan2(2.0f*(q.x*q.y + q.z*q.w), q.x*q.x - q.y*q.y - q.z*q.z + q.w*q.w);
+    
+    yaw *= -180.0f / M_PI;
+    pitch *= -180.0f / M_PI;
+    roll *= -180.0f / M_PI;
+
+    my_data->orientation[0] = yaw;
+    my_data->orientation[1] = pitch;
+    my_data->orientation[2] = roll;
+
+    free(data);
+}
+
 void imu_init()
 {
     i2c_write(I2C_ADDRESS, OPR_MODE, 0x00);
@@ -63,6 +111,9 @@ void imu_init()
     i2c_write(I2C_ADDRESS, ACC_CONFIG, 0x00);
     
     i2c_write(I2C_ADDRESS, PAGE_ID, 0x00);
+
+    i2c_write(I2C_ADDRESS, UNIT_SEL, 0x01);
+    
     i2c_write(I2C_ADDRESS, OPR_MODE, 0x0C);
 }
 
